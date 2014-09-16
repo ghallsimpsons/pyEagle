@@ -11,6 +11,8 @@
 #                                                   #
 #####################################################
 
+from math import sin, cos
+
 class SignalVertex:
     """Representation of a signal vertex."""
     def __init__(self, signal, x, y):
@@ -24,6 +26,7 @@ class Signal:
     """Representation of a signal."""
     @staticmethod
     def new_id():
+        """Get a unique id for the signal"""
         global signal_id
         try:
             signal_id += 1
@@ -31,6 +34,8 @@ class Signal:
             signal_id = 0
         return signal_id
     def __init__(self, width, layer):
+        if not isinstance(layer, (int, long)):
+            raise TypeError("Layer must be an integer value!")
         self.vertices = []
         self.width = width
         self.layer = layer
@@ -47,6 +52,16 @@ class Signal:
                     vert1 = self.vertices[vertex],
                     vert2 = self.vertices[vertex + 1])
         return route
+    def r_theta(self, r, theta):
+        if len(self.vertices) == 0:
+            raise IndexError((
+                "r_theta() must reference an existing point. "
+                "Signal {s_id} had no vertices."
+                ).format(s_id = self.signal_id) )
+        last_point = self.vertices[-1]
+        new_x = last_point.x + r*cos(theta)
+        new_y = last_point.y + r*sin(theta)
+        self.add(new_x, new_y)
 
 class Board:
     """Representation of a PCB"""
@@ -58,6 +73,7 @@ class Board:
         self.footprints = []
         self.outfile = outfile
     def add(self, thing):
+        """Add signals and Footprints to boards."""
         if isinstance(thing, Signal):
             self.signals.append(thing)
         elif isinstance(thing, Footprint):
@@ -69,5 +85,4 @@ class Board:
         f = open(self.outfile, 'w')
         for signal in self.signals:
             f.write( signal.draw() )
-
 
