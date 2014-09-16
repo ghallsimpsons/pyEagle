@@ -23,7 +23,9 @@ class SignalVertex:
         return "({} {})".format(self.x, self.y)
 
 class Signal:
-    """Representation of a signal."""
+    """Representation of a signal.
+       Signal constructor requires a float width and
+       an integer layer number."""
     @staticmethod
     def new_id():
         """Get a unique id for the signal"""
@@ -53,6 +55,9 @@ class Signal:
                     vert2 = self.vertices[vertex + 1])
         return route
     def r_theta(self, r, theta):
+        """Creates a new SignalVertex with offset
+            (r, theta) from the last SignalVertex.
+        """
         if len(self.vertices) == 0:
             raise IndexError((
                 "r_theta() must reference an existing point. "
