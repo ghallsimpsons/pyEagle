@@ -68,6 +68,19 @@ class Signal:
         new_y = last_point.y + r*sin(theta)
         self.add(new_x, new_y)
 
+class Footprint:
+    """Representation of a package footprint."""
+    def __init__(self, name, package, library, orientation):
+        self.name = name
+        self.package = package
+        self.library = library
+        self.orientation = orientation
+    def place(self):
+        return "ADD '{name}' {package}@{library} {orientation}".format(
+                name = self.name, package = self.package,
+                library = self.library, orientation = self.orientation
+                )
+
 class Board:
     """Representation of a PCB"""
     def __init__(self, outfile='generated_PCB.src'):
@@ -90,4 +103,6 @@ class Board:
         f = open(self.outfile, 'w')
         for signal in self.signals:
             f.write( signal.draw() )
+        for footprint in self.footprints:
+            f.write( footprint.place() )
 
