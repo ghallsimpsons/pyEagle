@@ -71,6 +71,15 @@ class Signal:
 class Footprint:
     """Representation of a package footprint."""
     def __init__(self, name, package, library, orientation):
+        """Representation of a footprint.
+
+        Arguments:
+        name -- Unique name Eagle will call this instance.
+        package -- The name of the package in your eagle Lib.
+        library -- The Eagle library which contains your package.
+        orientation -- R<rad> for rotation <rad> radians.
+                MR<rad> rotates AND Mirrors the footprint.
+        """
         self.name = name
         self.package = package
         self.library = library
