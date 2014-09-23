@@ -32,7 +32,7 @@ gnd = Eagle.Signal(trace_width, trace_layer)
 Route the signal
 
 ```Python
-gnd.add(0,0)          # Start Ground at the origin
+gnd.add(0,0)              # Start Ground at the origin
 gnd.r_theta(r=2, theta=0) # Extend the trace 2mm at 0 rad
 ```
 
@@ -63,5 +63,5 @@ go anywhere, and a misplaced ZIF connecter! Print it!
 board.draw()
 ```
 
-That's it! Now import myOutFile.src to Eagle using
+That's it! Now import myOutFile.scr to Eagle using
 `File->Execute Script...` and watch Eagle do its magic.
