@@ -1,7 +1,7 @@
 pyEagle
 =======
 
-Python library for creating Eagle PCB .src files.
+Python library for creating Eagle PCB .scr files.
 
 Usage
 -----
@@ -15,7 +15,7 @@ from pyEagle import Eagle
 Create a board
 
 ```Python
-board = Eagle.Board(outfile='~/myOutFile.src')
+board = Eagle.Board(outfile='~/myOutFile.scr')
 ```
 
 The Eagle commands will be written to the outfile,
@@ -45,8 +45,8 @@ board.add(gnd)
 We also need to add a ZIF connecter to our board.
 The package is called MYZIF, and we created it in
 the MYZIFLIB library. The orientation argument is
-Eagle syntax: R<deg> orients the part at <deg>
-degrees, and MR<deg> also mirrors the part.
+Eagle syntax: `R<deg>` orients the part at `<deg>`
+degrees, and `MR<deg>` also mirrors the part.
 
 ```Python
 loc = (1, 1)
