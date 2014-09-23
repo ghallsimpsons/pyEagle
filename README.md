@@ -50,8 +50,10 @@ degrees, and MR<deg> also mirrors the part.
 
 ```Python
 loc = (1, 1)
-myZIF = Eagle.Footprint("OutputCable", "MYZIF", "MYZIFLIB", "R0", loc)
-board.addFootprint(myZIF)
+ZIF = Eagle.FootprintFactory("MYZIF", "MYZIFLIB")
+first_ZIF = ZIF("first_ZIF", "R0", loc)
+board.add(first_ZIF)
+
 ```
 
 We now have a board, with a ground trace that doesn't

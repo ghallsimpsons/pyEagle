@@ -35,19 +35,30 @@ class Signal:
         except:
             signal_id = 0
         return signal_id
-    def __init__(self, width, layer):
+    def __init__(self, width, layer, bend):
+        """Arguments:
+
+        width -- Trace width in mm
+        layer -- Board layer to place trace
+        bend -- Bend type, see: http://web.mit.edu/xavid/arch/i386_rhel4/help/86.htm
+        """
         if not isinstance(layer, (int, long)):
             raise TypeError("Layer must be an integer value!")
+        if not isinstance(bend, (int, long)) or bend < 0 or bend > 7:
+            raise TypeError("Bend must be integer between 0 and 7! See \
+                    http://web.mit.edu/xavid/arch/i386_rhel4/help/86.htm")
         self.vertices = []
         self.width = width
         self.layer = layer
         self.signal_id = Signal.new_id()
+        self.bend = bend
     def add(self, x, y):
         """Add SignalVertex to signal."""
         self.vertices.append( SignalVertex(self, x, y) )
     def draw(self):
         """Return Eagle syntax."""
         route = "LAYER {}\n".format(self.layer)
+        route += "SET WIRE_BEND {};\n".format(self.bend)
         for vertex in xrange(len(self.vertices)-1):
             route += "WIRE 'RTE{s_id}' {vert1} {width}mm {vert2}\n".format(
                     s_id = self.signal_id, width = self.width,
@@ -68,32 +79,47 @@ class Signal:
         new_y = last_point.y + r*sin(theta)
         self.add(new_x, new_y)
 
-class Footprint:
-    """Representation of a package footprint."""
-    def __init__(self, name, package, library, orientation):
-        """Representation of a footprint.
+def FootprintFactory(package, library):
+    """Creates a Factory for a particular footprint.
 
-        Arguments:
-        name -- Unique name Eagle will call this instance.
-        package -- The name of the package in your eagle Lib.
-        library -- The Eagle library which contains your package.
-        orientation -- R<rad> for rotation <rad> radians.
-                MR<rad> rotates AND Mirrors the footprint.
-        """
-        self.name = name
-        self.package = package
-        self.library = library
-        self.orientation = orientation
-    def place(self):
-        return "ADD '{name}' {package}@{library} {orientation}".format(
-                name = self.name, package = self.package,
-                library = self.library, orientation = self.orientation
+    Arguments:
+    package -- The name of the package in your eagle Lib.
+    library -- The Eagle library which contains your package.
+    """
+    class Footprint: 
+        """Representation of a footprint type."""
+        def __init__(self, name, orientation, location):
+            """An individual instance of the degined footprint.
+
+            Arguments:
+            name -- Unique name Eagle will call this instance.
+            orientation -- R<deg> for rotation <deg> degrees.
+                MR<deg> rotates AND Mirrors the footprint.
+            location -- (x, y) tuple, dimensions in mm
+            """
+            self.name = name
+            self.orientation = orientation
+            self.location = location
+        def place(self):
+            create = "ADD '{name}' {package}@{library} {orientation}".format(
+                    name = self.name, package = self.package,
+                    library = self.library, orientation = self.orientation
                 )
+            move = "MOVE {name} {x} {y}".format(
+                    name = self.name, x = self.location[0],
+                    y = self.location[1]
+                )
+            return "{create}\n{move}\n".format(create = create, move = move)
+
+    Footprint.package = package
+    Footprint.library = library
+
+    return Footprint
 
 class Board:
     """Representation of a PCB"""
-    def __init__(self, outfile='generated_PCB.src'):
-        """ Output filetype should be .src for use by
+    def __init__(self, outfile='generated_PCB.scr'):
+        """ Output filetype should be .scr for use by
             Eagle's script functionality.
         """
         self.signals = []
@@ -103,10 +129,8 @@ class Board:
         """Add signals and Footprints to boards."""
         if isinstance(thing, Signal):
             self.signals.append(thing)
-        elif isinstance(thing, Footprint):
-            self.footprints.append(thing)
         else:
-            raise TypeError("Added object must be a Signal or a device footprint.")
+            self.footprints.append(thing)
     def draw(self):
         """Draw PCBoard and output to file"""
         f = open(self.outfile, 'w')
