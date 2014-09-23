@@ -35,7 +35,7 @@ class Signal:
         except:
             signal_id = 0
         return signal_id
-    def __init__(self, width, layer, bend):
+    def __init__(self, width, layer, bend=2):
         """Arguments:
 
         width -- Trace width in mm
