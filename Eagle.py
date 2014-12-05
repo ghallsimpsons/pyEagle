@@ -11,7 +11,7 @@
 #                                                   #
 #####################################################
 
-from math import sin, cos
+from math import sin, cos, tan, pi
 
 class SignalVertex:
     """Representation of a signal vertex."""
@@ -21,6 +21,11 @@ class SignalVertex:
         self.y = y
     def __str__(self):
         return "({} {})".format(self.x, self.y)
+    def coord(self):
+        return (self.x, self.y)
+
+# Utils depents on SignalVertex
+from Utils import distance_theta, project
 
 class Signal:
     """Representation of a signal.
@@ -52,6 +57,13 @@ class Signal:
         self.layer = layer
         self.signal_id = Signal.new_id()
         self.bend = bend
+    # Alias for the last vertex
+    @property
+    def last(self):
+        return self.vertices[-1]
+    @last.setter
+    def last(self,value):
+        self.vertices[-1]=value
     def add(self, x, y):
         """Add SignalVertex to signal."""
         self.vertices.append( SignalVertex(self, x, y) )
@@ -139,3 +151,75 @@ class Board:
         for footprint in self.footprints:
             f.write( footprint.place() )
 
+class SignalGroup:
+    """ The SignalGroup class allows for easy operations on closely related
+        signals. Most operations will produce unexpected results if the signals
+        are not parallel.
+    """
+    def __init__(self, signals):
+        self.signals = signals
+    def add(self, signal):
+        self.signals.append(signal)
+    def remove(self, signal):
+        """ Remove signal by reference, index, or range as a tuple."""
+        if isinstance(signal, (int, long)):
+            del self.signals[signal]
+        elif isinstance(signal, Signal):
+            self.signals.remove(Signal)
+        elif isinstance(signal, tuple) and len(signal)==2:
+            del self.signals[signal[0]:signal[1]]
+        else:
+            raise TypeError("Argument must be a Signal, index, or tuple of ints")
+    def elbow(self, theta_i, theta_f, distance=0, final_spacing=None, fixed=0):
+        """ Bends signals in group from theta_i to theta_f.
+            If a distance is provided, the traces will be extended that
+            distance in the given orientation. Final spacing is a size
+            N-1 list of distances which will convert the initial spacing
+            to a new final spacing at the new orientation. If not provided,
+            the initial spacing is preserved. The first element of traces is
+            left stationary, unless invert=True (useful for symetric operations).
+            All other traces are extended as necessary.
+            Note: This function will misbehave if you provide an
+            incorrect initial angle, or if the traces are not in correct order.
+        """
+        signals = self.signals
+        init_spacing = [distance_theta(signals[i].last, signals[i+1].last, theta_i+pi/2) for i in xrange(len(signals)-1)]
+        if (final_spacing != None and not isinstance(final_spacing, list) 
+                and not len(final_spacing) == len(signals)-1):
+            raise TypeError("final_spacing must be a list of distances between \
+                    signals, i.e. a len(signals)-1 list.")
+        elif final_spacing == None:
+            final_spacing = init_spacing
+
+
+        """ First, let theta_i = 0. Then delta_dist = final_spacing*cos(theta_f)
+            - (init_spacing-final_spacing*cos(theta_f))*cot(pi/2-theta_f)
+            We then project along -theta_i (equivalent to projecting theta_i onto
+            theta = 0, which is what we want).
+        """
+        d_theta = theta_f - theta_i
+        fixed_init_d = sum(init_spacing[:fixed])
+        fixed_final_d = sum(final_spacing[:fixed])
+        d = fixed_final_d*cos(d_theta) - \
+            (fixed_init_d-fixed_final_d) \
+            / tan(pi/2-d_theta)
+        x_norm, y_norm = project(d, 0, theta_i, theta_f)
+        signals[0].last.x -= x_norm
+        signals[0].last.y -= y_norm
+        base_coords = signals[0].last.coord()
+        for i in xrange(len(init_spacing)):
+            d = final_spacing[i]*cos(d_theta) - \
+                (init_spacing[i]-final_spacing[i]*sin(d_theta)) \
+                / tan(pi/2-d_theta)
+            x_diff, y_diff = map(sum,zip(project(0, d, 0, theta_i-pi/2),project(init_spacing[i], 0, 0, theta_i-pi/2)))
+            signals[i+1].last.x = base_coords[0] - x_diff
+            signals[i+1].last.y = base_coords[1] - y_diff
+            base_coords = signals[i+1].last.coord()
+        self.grouped_r_theta(distance, theta_f, fixed)
+    def grouped_r_theta(self, r, theta, center):
+        """ Runs the center signal a distance r, and runs other signals to align
+            with the first."""
+        center = self.signals[center].last.coord()
+        for sig in self.signals:
+            delta = distance_theta(center, sig.last.coord(), theta)
+            sig.r_theta(r-delta, theta)
